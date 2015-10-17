@@ -1,9 +1,9 @@
 // This class produces sounds with waveform generators.
 
 public class ColorOsc {
-    Blit bh; Blit bh2;
-    BlitSquare bq; BlitSquare bq2;
-    BlitSaw bs; BlitSaw bs2;
+    Blit bh;
+    BlitSquare bq;
+    BlitSaw bs;
     Envelope e => Gain g => Pan2 pan;
 
     public void set( float ga, dur secs, int sig, int pos, float halfwidth ) {
