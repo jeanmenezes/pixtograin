@@ -1,0 +1,124 @@
+#!/usr/bin/python2
+
+import sys
+import time
+import argparse as ap
+from multiprocessing import Process
+import lib.sendhsv as hsv
+from PIL import Image
+from subprocess import check_call
+import os
+
+def xy_coords(s):
+    """Custom data type for X,Y coordinates"""
+    try:
+        x, y = map(int, s.split(','))
+    except:
+        tmpstring = "{0},{1}".format(s, s)
+        x, y = map(int, tmpstring.split(','))
+    return x, y
+
+
+def setArguments():
+    """Parses command line arguments with argparse and returns them properly"""
+    parser = ap.ArgumentParser(description='Sonify pixels and image segments based on their HSV color data')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("-a", "--additive", help='Use additive synthesis for sonification',
+                       action='store_true')
+    group.add_argument("-c", "--control", help='Use STK instrument control for sonification',
+                       action='store_true')
+    parser.add_argument("-z", "--zoom", metavar='Z',
+                        help='Zoom level for processing the image (will be directly proportional to sound grain\'s length)',
+                        type=float, default=1.0)
+    parser.add_argument("-mf", "--maxfreq", metavar='MF',
+                        help='Maximum frequency allowed for sound. Higher values will lead to more high pitched sounds and greater pitch intervals.',
+                        type=float, default=1000.0)
+    parser.add_argument("-li", "--lines", metavar='Y', type=int, action='store', const=1, nargs='?',
+                        help='Generate one grain of sound for each line of pixels in the image. The line may have an arbitrary height of Y pixels')
+    parser.add_argument("-co", "--cols", metavar='X', type=int, action='store', const=1, nargs='?',
+                        help='Generate one grain of sound for each column of pixels in the image')
+    parser.add_argument("-px", "--pixels", action='store_true', default=False,
+                        help='Generate one grain of sound for every pixel in the image (WARNING: this will take A LOT of time!)')
+    parser.add_argument("--segs", action='store', metavar='X[,Y]', type=xy_coords, nargs='?', const=(100, 100),
+                        help='Generate one grain of sound for every adjacent segment of width X and height Y. If only X is given, the segment will be square.\
+                        WARNING: small segment sizes can take A LOT of time to sonify!')
+    parser.add_argument("--pictophon", action='store_false', default=False,
+                        help='Generate sounds via the good ol\' pictophon (not working as of now; please use pictophon separately)')
+    parser.add_argument("-r", "--reduce", action='store', type=float, metavar='D',
+                        help='Reduce image size for faster (yet less accurate) processing. Width and height will be divided by D.')
+    parser.add_argument("image", help='Image to be sonified', action='store')
+    return parser.parse_args()
+
+
+def sonify(colors, chuckcom):
+    """Lauches OSC communication between pixtograin and ChucK; this is the actual sonification process"""
+    p1 = Process(target=check_call, args=(chuckcom,))
+    p2 = Process(target=hsv.communicateWithChuck, args=(colors,))
+    p1.start()
+    time.sleep(2)
+    p2.start()
+    while p1.is_alive():
+        time.sleep(1)
+
+
+def renameAndMove(thedir, theintent, thearg, thezoom, thefreq, thesize="1"):
+    """Renames generated .wav files according to used parameters and moves them to a convenient location."""
+    to_rename = "pixels.wav" if os.path.exists("pixels.wav") else ("control.wav")
+    new_name = "{0}/{1}-{2}-{3}px-zoom-{4}-freq-{5}.wav".format(thedir, theintent, thearg, thesize, thezoom, thefreq)
+    os.rename(to_rename, new_name)
+    if os.path.exists("timbre.wav"):
+        os.rename("timbre.wav", "{0}/timbre-{1}-{2}px-zoom-{3}.wav".format(wavsdir, thearg, thesize, thezoom))
+
+
+if __name__ == "__main__":
+    # get arguments from command line
+    args = setArguments()
+
+    # set ubiquitous variables
+    intent = "control" if args.control else "additive"
+    zoom = args.zoom
+    maxfreq = args.maxfreq
+
+    # try to open image; assert if it is a valid file
+    try:
+        img = Image.open(args.image)
+    except:
+        print "The file {0} is not a valid image.".format(args.image)
+        sys.exit(1)
+
+    # if required, reduce image dimensions by a ratio of 1/args.reduce
+    if args.reduce:
+        newsize = tuple(map(lambda x: x/args.reduce, img.size))
+        img = img.resize(map(int, newsize), Image.ANTIALIAS)
+
+    # format proper ChucK command to be called
+    basechuck = "chuck -s -v0 lib/colorinst.ck lib/colorosc.ck lib/pixel.ck".split(" ")
+    basechuck.append("lib/listener.ck:{0}:{1}:{2}".format(intent, zoom, maxfreq))
+
+    # try to create directory named after the image file to be sonified
+    # (in case it doesn't exist yet)
+    wavsdir = os.path.splitext(os.path.basename(args.image))[0]
+    if not os.path.isdir(wavsdir):
+        os.mkdir(wavsdir)
+
+    # generate sound files for each argument set
+    if args.pixels:
+        alldata = hsv.pixelValues(img)
+        sonify(alldata, basechuck)
+        renameAndMove(wavsdir, intent, "allpixels", zoom, maxfreq)
+
+    if args.lines:
+        alldata = hsv.sliceValues(img, linesize=args.lines)
+        sonify(alldata, basechuck)
+        renameAndMove(wavsdir, intent, "lines", zoom, maxfreq, args.lines)
+
+    if args.cols:
+        alldata = hsv.sliceValues(img, columnsize=args.cols)
+        sonify(alldata, basechuck)
+        renameAndMove(wavsdir, intent, "cols", zoom, maxfreq, args.lines)
+
+    if args.segs:
+        alldata = hsv.sliceValues(img, tilesize=args.segs)
+        sonify(alldata, basechuck)
+        formatted_segs = 'x'.join(str(i) for i in args.segs)
+        renameAndMove(wavsdir, intent, "segs", zoom, maxfreq, formatted_segs)
