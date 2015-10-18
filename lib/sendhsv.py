@@ -1,6 +1,6 @@
 #!/usr/bin/python2
 
-from PIL import Image
+#from PIL import Image
 import colorsys
 from sklearn.cluster import KMeans
 import numpy as np
@@ -63,7 +63,7 @@ def sliceValues(img, tilesize=None, linesize=None, columnsize=None):
     if linesize > 0:
         print "getting values for every line..."
         for l in range(0, h, linesize):
-            sig = -1 if l < (h / 2) else 0 if l == (h / 2) else 1
+            sig = 0
             slicedata.append((0, l, meanColor(img.crop((0, l, w, l+linesize))), sig))
     elif columnsize > 0:
         print "getting values for every column..."
@@ -74,7 +74,7 @@ def sliceValues(img, tilesize=None, linesize=None, columnsize=None):
         print "getting values for every segment..."
         if isinstance(tilesize, tuple):
             tilewidth, tileheight = tilesize
-        elif isinstance(int, tilesize):
+        elif isinstance(tilesize, int):
             tilewidth = tilesize
             tileheight = tilesize
         for hs in range(0, h, tileheight):
