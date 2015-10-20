@@ -108,16 +108,22 @@ if __name__ == "__main__":
         renameAndMove(wavsdir, intent, "allpixels", zoom, maxfreq)
 
     if args.lines:
+        print "intent is: {0}".format(intent)
+        print "sonifying for lines with height {0}; zoom is {1} and maximum frequency is {2}".format(args.lines, zoom, maxfreq)
         alldata = hsv.sliceValues(img, linesize=args.lines)
         sonify(alldata, basechuck)
         renameAndMove(wavsdir, intent, "lines", zoom, maxfreq, args.lines)
 
     if args.cols:
+        print "intent is: {0}".format(intent)
+        print "sonifying for columns with width {0}; zoom is {1} and maximum frequency is {2}".format(args.cols, zoom, maxfreq)
         alldata = hsv.sliceValues(img, columnsize=args.cols)
         sonify(alldata, basechuck)
         renameAndMove(wavsdir, intent, "cols", zoom, maxfreq, args.lines)
 
     if args.segs:
+        print "intent is: {0}".format(intent)
+        print "sonifying for segments with size {0}; zoom is {1} and maximum frequency is {2}".format(args.segs, zoom, maxfreq)
         alldata = hsv.sliceValues(img, tilesize=args.segs)
         sonify(alldata, basechuck)
         formatted_segs = 'x'.join(str(i) for i in args.segs)

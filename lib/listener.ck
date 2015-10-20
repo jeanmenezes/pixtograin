@@ -36,7 +36,6 @@ fun void playPixels( Pixel pixels[], int totalpixels, int maxx, float zoom, floa
     string osctype;
     0 => int i;
     while ( i < totalpixels ) {
-        pixels[i].print();
         pixels[i].playForPixels( totalpixels, pixels[i].osctype, maxx, zoom, pitch_window );
         i++;
     }

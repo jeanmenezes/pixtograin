@@ -1,7 +1,7 @@
 // This class produces sounds with STK Instruments
 
 public class ColorInst {
-    BandedWG bw;
+    Moog mo;
     Shakers sh;
     ModalBar mb;
     Gain g => Pan2 pan;
@@ -23,19 +23,19 @@ public class ColorInst {
         pan =< ug;
     }
 
-    public void trig_bw( dur dr, float b_press, float b_mot, float b_rate, float st_pos, int preset, float freq ) {
-        bw => g;
-        ( b_press + 1.0 ) / 2.0 => bw.bowPressure;
-        ( b_mot + 1.0 ) / 2.0 => bw.bowMotion;
-        ( b_rate + 1.0 ) / 2.0 => bw.bowRate;
-        st_pos => bw.strikePosition;
-        preset => bw.preset;
-        freq => bw.freq;
-        bw.startBowing( b_press );
+    public void trig_mo( dur dr, float fq, float fsr, float vib_freq, float vib_gain, float after, float freq ) {
+        mo => g;
+        ( fq + 1.0 ) / 2.0 => mo.filterQ;
+        ( fsr + 1.0 ) / 2.0 => mo.filterSweepRate;
+        ( vib_gain + 1.0 ) / 2.0 => mo.vibratoGain;
+        vib_freq => mo.vibratoFreq;;
+        after => mo.afterTouch;
+        freq => mo.freq;
+        1 => mo.noteOn;
         dr => now;
-        bw.stopBowing( b_mot );
+        1 => mo.noteOff;
         dr / 10 => now;
-        bw =< g;
+        mo =< g;
     }
 
     public void trig_sh( dur dr, int preset, float energy, float decay, float objects, float freq ) {
@@ -63,6 +63,7 @@ public class ColorInst {
         1.0 => mb.volume;
         mb.strike(1);
         dr => now;
+        mb.damp(1);
         dr / 10 => now;
         mb =< g;
     }

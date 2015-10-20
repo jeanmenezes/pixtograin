@@ -61,17 +61,15 @@ public class Pixel {
         p.set( ( s * v ), sig, x, half );
         p.connect( dac );
         if ( h < ( 1.0 / 3 ) ) {
-            ( zoom + ( ( h * pitch_window ) ) % 4 )$int => int h1;
-            ( zoom + ( ( s * pitch_window ) ) % 4 )$int => int h2; 
-            p.trig_bw( dura, s, v, zoom, v, h1, ( h * pitch_window ) + 16 );
-            p.trig_bw( dura, s, v, zoom, v, h2, ( s * pitch_window ) + 16 );
+            ( zoom + ( ( h * pitch_window ) ) % 21 )$int => int h1; ( zoom + ( ( s * pitch_window ) ) % 21 )$int => int h2;
+            ( zoom + ( ( h * pitch_window ) ) % 127 )$int => int hh1; ( zoom + ( ( s * pitch_window ) ) % 127 )$int => int hh2;
+            p.trig_sh( dura, h1, v, ( h * s ), hh1, ( h * pitch_window ) + 16 );
+            p.trig_sh( dura, h2, v, ( h * s ), hh2, ( s * pitch_window ) + 16 );
         }
         else {
             if ( h >= ( 1.0 / 3 ) && h < ( 2.0 / 3 ) ) {
-                ( zoom + ( ( h * pitch_window ) ) % 21 )$int => int h1; ( zoom + ( ( s * pitch_window ) ) % 21 )$int => int h2;
-                ( zoom + ( ( h * pitch_window ) ) % 127 )$int => int hh1; ( zoom + ( ( s * pitch_window ) ) % 127 )$int => int hh2;
-                p.trig_sh( dura, h1, v, ( h * s ), hh1, ( h * pitch_window ) + 16 );
-                p.trig_sh( dura, h2, v, ( h * s ), hh2, ( s * pitch_window ) + 16 );
+                p.trig_mo( dura, s, v, ( s * pitch_window), v, v, ( h * pitch_window ) + 16 );
+                p.trig_mo( dura, s, v, ( h * pitch_window), v, v, ( s * pitch_window ) + 16 );
             }
             else {
                 ( zoom + ( ( h * pitch_window ) ) % 9 )$int => int h1; ( zoom + ( ( s * pitch_window ) ) % 9 )$int => int h2;
